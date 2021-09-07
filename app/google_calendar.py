@@ -7,7 +7,8 @@ from google.oauth2.credentials import Credentials
 
 class GoogleCalendar:
 
-    SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
+    # If modifying these scopes, delete the file token.json.
+    SCOPES = ['https://www.googleapis.com/auth/calendar.readonly' , 'https://www.googleapis.com/auth/calendar.events']
     def __init__(self):
         creds = None
         # The file token.json stores the user's access and refresh tokens, and is
@@ -22,7 +23,7 @@ class GoogleCalendar:
             else:
                 flow = InstalledAppFlow.from_client_secrets_file(
                     'credentials.json', self.SCOPES)
-                creds = flow.run_local_server(port=0)
+                creds = flow.run_local_server(port=65490)
             # Save the credentials for the next run
             with open('token.json', 'w') as token:
                 token.write(creds.to_json())
@@ -46,10 +47,7 @@ class GoogleCalendar:
     def already_exists(self, new_event):
         events = self.get_date_events(new_event['start']['dateTime'], self.get_events())
         event_list = [new_event['summary'] for new_event in events]
-        if new_event['summary'] not in event_list:
-            return False
-        else:
-            return True
+        return new_event['summary'] in event_list
 
     def get_date_events(self, date, events):
         lst = []

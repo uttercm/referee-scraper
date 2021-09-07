@@ -1,3 +1,4 @@
+from app.sendgrid_mailer import SendGridMailer
 import requests
 import copy
 import datetime
@@ -13,6 +14,7 @@ import sys
 
 #sys.path.append(".")
 from .google_calendar import GoogleCalendar
+from .sendgrid_mailer import SendGridMailer
 
 headers = { 'User-agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:91.0) Gecko/20100101 Firefox/91.0' }
 
@@ -39,7 +41,7 @@ end = now + datetime.timedelta(days=7)
 # to convert dates to string use .strftime('%Y-%m-%d')
 select_statement = "SELECT * FROM schedule_mv WHERE ((game_id = 760 OR game_id = 834 OR game_id = 769 OR game_id = 736) OR (ref1 = '19172' || ref2 = '19172' || ref3 = '19172')  OR (ref1 = '-' || ref2 = '-' || ref3 = '-') ) AND (game_ts between '{}' AND '{}') AND (game_status != '4') ORDER BY game_date, field_name, game_ts LIMIT 0,100".format(now.timestamp(), end.timestamp())
 
-
+sendgrid_mailer = SendGridMailer()
 
 GAMES_URL = 'http://www.thegameschedule.com/mv/ref2.php'
 
@@ -65,25 +67,58 @@ get_csv = session.get('http://www.thegameschedule.com/mv/download.php?file=excel
 stream = io.StringIO(get_csv.content.decode('utf-8'))
 reader = csv.DictReader(stream)
 
-allowed_levels = ['G11', 'G10', 'G12', 'B12', 'G13', 'G14', 'B09', 'B10', 'B11', 'B12']
-my_name = 'C. Utter'
-
-# If modifying these scopes, delete the file token.json.
-SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
+ALLOWED_LEVELS = ['G11', 'G10', 'G12', 'G13', 'G14', 'B09', 'B10', 'B11', 'B12']
+MY_NAME = 'C. Utter'
 
 google_calendar = GoogleCalendar()
 
-# Call the Calendar API
-print('Getting the upcoming 10 events')
-events = google_calendar.get_events()
-print(events)
+def create_event(summary, location, date_time):
+    event_end = date_time + datetime.timedelta(minutes=90)
+    return {
+        'summary': summary,
+        'location': location,
+        'description': '',
+        'start': {
+            'dateTime': date_time.isoformat() + '-04:00'
+        },
+        'end': {
+            'dateTime': event_end.isoformat() + '-04:00'
+        },
+        'reminders': {
+            'useDefault': True,
+        },
+    }
+
+def parse_event_line(line):
+    age_level = line['Level'][0: 3]
+    is_my_game = False
+    summary = age_level
+    if age_level not in ALLOWED_LEVELS:
+        return False, None, None, None
+    position = None
+    location = line['Field']
+    if MY_NAME == line['Ref']:
+        position = 'Ref'
+    elif MY_NAME == line['AR1']:
+        position = 'AR1'
+    elif MY_NAME == line['AR2']:
+        position = 'AR2'
+    
+    if position:
+        is_my_game = True
+        summary += " {}".format(position)
+        print('existing game for me')
+
+    date_time = datetime.datetime.strptime("{} {}".format(line['Date'], line['Time']), '%Y-%m-%d %I:%M %p')
+
+    return is_my_game, summary, date_time, location
 
 for line in reader:
-    age_level = line['Level'][0: 3]
-    print(age_level)
-    if age_level in allowed_levels:
-        print(line)
-        if my_name in [line['Ref'], line['AR1'], line['AR2']]:
-            print('existing game for me')
-
-    break
+    is_my_game, summary, date_time, location = parse_event_line(line)
+    if is_my_game:
+        event = create_event(summary, location, date_time)
+        print(event)
+        if not google_calendar.already_exists(event):
+            print('creating event')
+            google_calendar.create_event(event)
+            sendgrid_mailer.send_new_calendar_event(summary, date_time)
