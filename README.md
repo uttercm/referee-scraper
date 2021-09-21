@@ -22,6 +22,14 @@ For my own scraper of Ohio's referee assignments
 
 `python3 -m app`
 
+Arguments:
+
+*LEAGUE*
+For scraping one of the different websites either `mv` or `ohiosouth`.
+
+*FORMAT*
+For choosing a way to scrape the website either with beautiful soup, `scraper`, or by downloading the linked spreadsheet csv, `csv`.
+
 ## Functionality
 
 ### Downloading and parsing the CSV
