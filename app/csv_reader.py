@@ -2,13 +2,13 @@ import datetime
 import io
 
 class CsvReader:
-    def get_stream(post_headers, session, send_grid_mailer):
+    def get_stream(post_headers, session, send_grid_mailer, league):
         now = datetime.datetime.now()
         end = now + datetime.timedelta(days=30)
         # to convert dates to string use .strftime('%Y-%m-%d')
         select_statement = "SELECT * FROM schedule_mv WHERE ((ref1 = '19172' || ref2 = '19172' || ref3 = '19172')  OR (ref1 = '-' || ref2 = '-' || ref3 = '-') ) AND (game_ts between '{}' AND '{}') AND (game_status != '4') ORDER BY game_date, field_name, game_ts LIMIT 0,100".format(now.timestamp(), end.timestamp())
 
-        GAMES_URL = 'http://www.thegameschedule.com/mv/ref2.php'
+        GAMES_URL = "http://www.thegameschedule.com/{}/ref2.php".format(league)
 
         game_data = {
             'create_spreadsheet': 'Create Spreadsheet',

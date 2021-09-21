@@ -3,9 +3,8 @@ import datetime
 
 
 class GameScraper:
-    GAMES_URL = 'http://www.thegameschedule.com/mv/ref2.php'
 
-    def __init__(self, post_headers, session) -> None:
+    def __init__(self, league, post_headers, session) -> None:
         now = datetime.datetime.now()
         end = now + datetime.timedelta(days=7)
         # to convert dates to string use .strftime('%Y-%m-%d')
@@ -22,6 +21,8 @@ class GameScraper:
         self.game_data = game_data
         self.post_headers = post_headers
         self.session = session
+        self.GAMES_URL = "http://www.thegameschedule.com/{}/ref2.php".format(league)
+        self.league = league
         get_response = session.post(self.GAMES_URL, data=game_data, headers=post_headers)
         self.soup = BeautifulSoup(get_response.content, "html.parser")
         pass
@@ -32,9 +33,12 @@ class GameScraper:
         games = main_table[2].find('table').find_all('tr')
         for game in games:
             game_data = game.find_all('td')
+            level = game_data[1].text.strip()[3:]
+            if self.league == 'ohiosouth':
+                level = level[-1] + level[-4:-2]
             new_game = { 
                 'game_num': game_data[0].text.strip(),
-                'Level': game_data[1].text.strip()[3:],
+                'Level': level,
                 'Date': '2021-'+ game_data[2].text.strip().replace('/', '-'),
                 'Time': game_data[3].text.strip(),
                 'Field': game_data[4].text.strip(),
@@ -51,9 +55,7 @@ class GameScraper:
         all_games = []
         pages = self.soup.find('body').find_all('table')[1].find_all('option')
         original_soup = self.soup
-        print(pages)
         for page in pages:
-            print(page['value'])
             url = self.GAMES_URL + page['value']
             get_response = self.session.get(url, headers=self.post_headers)
             self.soup = BeautifulSoup(get_response.content, "html.parser")

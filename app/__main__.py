@@ -14,19 +14,27 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 import sys
+import argparse
 
-#sys.path.append(".")
-from .google_calendar import GoogleCalendar
+parser = argparse.ArgumentParser(description='Referee Scraper.')
+
+parser.add_argument("-l", "--league", help="Either mv or ohiosouth.", default="mv")
+parser.add_argument("-f", "--format", help="Either scraper or csv.", default="scraper")
+
+args = parser.parse_args()
 
 headers = { 'User-agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:91.0) Gecko/20100101 Firefox/91.0' }
 
+league = args.league or 'mv'
+parsing_format = args.format or 'scraper'
+
 #For Setting Cookies
-URL = 'http://www.thegameschedule.com/mv/index.php'
+URL = "http://www.thegameschedule.com/{}/index.php".format(league)
 
 session = requests.Session()
 r = session.get(URL, headers = headers)
 
-LOGIN_URL = 'http://www.thegameschedule.com/mv/ref1.php'
+LOGIN_URL = "http://www.thegameschedule.com/{}/ref1.php".format(league)
 data = {
     'requiredref_num': '19172',
     'requiredpassword':  'VR9vn2',
@@ -46,10 +54,6 @@ ALLOWED_LEVELS = ['G09', 'G11', 'G10', 'G12', 'G13', 'G14', 'B09', 'B10', 'B11',
 MY_NAME = 'C. Utter'
 
 google_calendar = GoogleCalendar()
-
-scraper = GameScraper(post_headers, session)
-
-games = scraper.get_all_games()
 
 def create_event(summary, location, date_time):
     event_end = date_time + datetime.timedelta(minutes=90)
@@ -92,8 +96,13 @@ def parse_event_line(line):
 
     return is_my_game, summary, date_time, location
 
-# stream = CsvReader.get_stream(post_headers, session, sendgrid_mailer)
-# reader = csv.DictReader(stream)
+games = []
+if parsing_format == 'scraper':
+    scraper = GameScraper(league, post_headers, session)
+    games = scraper.get_all_games()
+else:
+    stream = CsvReader.get_stream(post_headers, session, sendgrid_mailer)
+    games = csv.DictReader(stream)
 
 # for line in reader:
 for line in games:
