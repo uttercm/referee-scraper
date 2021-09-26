@@ -9,6 +9,8 @@ class GoogleCalendar:
 
     # If modifying these scopes, delete the file token.json.
     SCOPES = ['https://www.googleapis.com/auth/calendar.readonly' , 'https://www.googleapis.com/auth/calendar.events']
+    existing_events = []
+
     def __init__(self):
         creds = None
         # The file token.json stores the user's access and refresh tokens, and is
@@ -30,31 +32,21 @@ class GoogleCalendar:
         self.creds = creds
         self.service = build('calendar', 'v3', credentials=creds)
 
-    def get_events(self):
-        now = datetime.datetime.utcnow().isoformat() + 'Z'
-        events_result = self.service.events().list(calendarId='primary', timeMin=now,
-                                                maxResults=10, singleEvents=True,
+    def get_events(self, timeMin = None, timeMax = None, maxResults = 5):
+        now = timeMin or datetime.datetime.utcnow().isoformat() + 'Z'
+        events_result = self.service.events().list(calendarId='primary', timeMin=now, timeMax=timeMax,
+                                                maxResults=maxResults, singleEvents=True,
                                                 orderBy='startTime').execute()
         return events_result.get('items', [])
 
     def create_event(self, new_event):
-        if not self.already_exists(new_event):
-            event = self.service.events().insert(calendarId='primary', body=new_event).execute()
-            return event.get('htmlLink')
-        else:
-            return 'Event Already Exists'
+        event = self.service.events().insert(calendarId='primary', body=new_event).execute()
+        return event.get('htmlLink')
 
     def already_exists(self, new_event):
-        events = self.get_date_events(new_event['start']['dateTime'], self.get_events())
-        event_list = [new_event['summary'] for new_event in events]
-        return new_event['summary'] in event_list
-
-    def get_date_events(self, date, events):
-        lst = []
-        date = date
+        events = self.get_events(new_event['start']['dateTime'], new_event['end']['dateTime'])
         for event in events:
-            if event.get('start').get('dateTime'):
-                d1 = event['start']['dateTime']
-                if d1 == date:
-                    lst.append(event)
-        return lst
+            if event['summary'] == new_event['summary'] and event['start']['dateTime'] == new_event['start']['dateTime']:
+                return True
+
+        return False

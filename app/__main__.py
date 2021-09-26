@@ -18,8 +18,8 @@ import argparse
 
 parser = argparse.ArgumentParser(description='Referee Scraper.')
 
-parser.add_argument("-l", "--league", help="Either mv or ohiosouth.", default="mv")
-parser.add_argument("-f", "--format", help="Either scraper or csv.", default="scraper")
+parser.add_argument("-l", "--league", help="Either mv or ohiosouth. Defaults to mv.", default="mv")
+parser.add_argument("-f", "--format", help="Either scraper or csv. Defaults to scraper.", default="scraper")
 
 args = parser.parse_args()
 
@@ -50,17 +50,17 @@ end = now + datetime.timedelta(days=30)
 
 sendgrid_mailer = SendGridMailer()
 
-ALLOWED_LEVELS = ['G09', 'G11', 'G10', 'G12', 'G13', 'G14', 'B09', 'B10', 'B11', 'B12']
+ALLOWED_LEVELS = ['G09', 'G10', 'G11', 'G12', 'G13', 'G14', 'B09', 'B10', 'B11', 'B12', 'B13', 'B14']
 MY_NAME = 'C. Utter'
 
 google_calendar = GoogleCalendar()
 
-def create_event(summary, location, date_time):
+def create_event(summary, location, date_time, description):
     event_end = date_time + datetime.timedelta(minutes=90)
     return {
         'summary': summary,
         'location': location,
-        'description': '',
+        'description': description,
         'start': {
             'dateTime': date_time.isoformat() + '-04:00'
         },
@@ -77,8 +77,9 @@ def parse_event_line(line):
     is_my_game = False
     summary = age_level
     if age_level not in ALLOWED_LEVELS:
-        return False, None, None, None
+        return False, None, None, None, None
     position = None
+    description = ''
     location = line['Field']
     if MY_NAME == line['Ref']:
         position = 'Ref'
@@ -93,8 +94,8 @@ def parse_event_line(line):
         print('existing game for me')
 
     date_time = datetime.datetime.strptime("{} {}".format(line['Date'], line['Time']), '%Y-%m-%d %I:%M %p')
-
-    return is_my_game, summary, date_time, location
+    description = "{} vs {}".format(line['hm_team'], line['aw_team'])
+    return is_my_game, summary, date_time, location, description
 
 games = []
 if parsing_format == 'scraper':
@@ -106,9 +107,9 @@ else:
 
 # for line in reader:
 for line in games:
-    is_my_game, summary, date_time, location = parse_event_line(line)
+    is_my_game, summary, date_time, location, description = parse_event_line(line)
     if is_my_game:
-        event = create_event(summary, location, date_time)
+        event = create_event(summary, location, date_time, description)
         print(event)
         if not google_calendar.already_exists(event):
             print('creating event')
