@@ -130,6 +130,4 @@ dmypy.json
 
 credentials.json
 token.json
-
-token.json
 sendgrid.env
