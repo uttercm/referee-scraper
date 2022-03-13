@@ -3,6 +3,7 @@ import datetime
 from pytz import timezone
 import requests
 import copy
+import json
 
 from app.scraper import Scraper, GameEvent
 
@@ -15,12 +16,18 @@ class OhioSouthScraper(Scraper):
         self.url = "http://www.thegameschedule.com/ohiosouth/index.php"
         self.login_url = "http://www.thegameschedule.com/ohiosouth/ref1.php"
         self.games_url = "http://www.thegameschedule.com/ohiosouth/ref2.php"
-        self.my_name = 'C. Utter'
+        self.my_name = None
+        self.ref_num = None
 
     def get_login_data(self):
+        f = open('application_info.json', 'r')
+        login_info = json.load(f)
+
+        self.ref_num = login_info['ohio_south']['ref_num']
+        self.my_name = login_info['ohio_south']['my_name']
         return {
-            'requiredref_num': '19172',
-            'requiredpassword':  'VR9vn2',
+            'requiredref_num': self.ref_num,
+            'requiredpassword':  login_info['ohio_south']['password'],
             'Submit1': 'Go'
         }
 
@@ -30,7 +37,7 @@ class OhioSouthScraper(Scraper):
         # to convert dates to string use .strftime('%Y-%m-%d')
         game_data = {
             'ref_radio': 'add_open',
-            'ref_num': ['19172', '19172'],
+            'ref_num': [self.ref_num, self.ref_num],
             'complexes': 'all',
             'v_start_day': now.strftime('%Y-%m-%d'),
             'v_end_day': end.strftime('%Y-%m-%d'),

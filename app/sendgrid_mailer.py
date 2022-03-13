@@ -1,12 +1,16 @@
 import os
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail, to_email
+import json
 
 class SendGridMailer:
     from_email = 'refereescraper@uttercm.com'
-    to_email = 'mikeutter19@gmail.com'
 
     def __init__(self):
+        f = open('application_info.json', 'r')
+        login_info = json.load(f)
+
+        self.to_email = login_info['sendgrid']['to_email']
         self.sg = SendGridAPIClient('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')
 
     def send_new_calendar_event(self, summary, date_time):
