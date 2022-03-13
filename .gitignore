@@ -125,12 +125,15 @@ venv.bak/
 .dmypy.json
 dmypy.json
 
+# Trunk Linter
+.flake8
+.isort.cfg
+.markdownlint.yaml
+.trunk/
+
 # Pyre type checker
 .pyre/
 
 credentials.json
 token.json
-
-token.json
-sendgrid.env
 application_info.json
