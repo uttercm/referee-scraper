@@ -1,0 +1,21 @@
+{
+  "sendgrid": {
+    "api_key": "example_key",
+    "to_email": "referee_email"
+  },
+  "ohio_south": {
+    "my_name": "Referee Name",
+    "ref_num": 12345,
+    "password": "example_password"
+  },
+  "game_officials": {
+    "my_name": "Referee Name",
+    "username": "example",
+    "password": "password"
+  },
+  "mvysa": {
+    "my_name": "Referee Name",
+    "username": "example",
+    "passwword": "password"
+  }
+}
