@@ -7,7 +7,7 @@ class SendGridMailer:
     to_email = 'mikeutter19@gmail.com'
 
     def __init__(self):
-        self.sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
+        self.sg = SendGridAPIClient('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')
 
     def send_new_calendar_event(self, summary, date_time):
         message = Mail(

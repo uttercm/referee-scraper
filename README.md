@@ -5,18 +5,8 @@ For my own scraper of Ohio's referee assignments
 
 1. Make sure python 3 is installed
     `python3 --version`
-2. Install requests
-    `pip3 install requests`
-3. Install beautiful soup
-    `pip3 install beautifulsoup4`
-4. Install sendgrid
-    `pip3 install sendgrid`
-5. Make sure setup tools is installed
-    `pip3 install setuptools`
-6. Install google apis
-    `pip3 install google-api-python-client`
-7. Install google oauthlib
-    `pip3 install google-auth-oauthlib`
+2. Install dependencies
+    `pip3 install -r requirements.txt`
 
 ## Running the application
 

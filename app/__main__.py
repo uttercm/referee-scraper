@@ -1,5 +1,4 @@
-from app.game_scraper import GameScraper
-from app.csv_reader import CsvReader
+from app.ohio_south_scraper import OhioSouthScraper
 from app.sendgrid_mailer import SendGridMailer
 from app.google_calendar import GoogleCalendar
 import requests
@@ -16,102 +15,54 @@ from google.oauth2.credentials import Credentials
 import sys
 import argparse
 
-parser = argparse.ArgumentParser(description='Referee Scraper.')
-
-parser.add_argument("-l", "--league", help="Either mv or ohiosouth. Defaults to mv.", default="mv")
-parser.add_argument("-f", "--format", help="Either scraper or csv. Defaults to scraper.", default="scraper")
-
-args = parser.parse_args()
-
-headers = { 'User-agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:91.0) Gecko/20100101 Firefox/91.0' }
-
-league = args.league or 'mv'
-parsing_format = args.format or 'scraper'
-
-#For Setting Cookies
-URL = "http://www.thegameschedule.com/{}/index.php".format(league)
-
-session = requests.Session()
-r = session.get(URL, headers = headers)
-
-LOGIN_URL = "http://www.thegameschedule.com/{}/ref1.php".format(league)
-data = {
-    'requiredref_num': '19172',
-    'requiredpassword':  'VR9vn2',
-    'Submit1': 'Go'
-}
-
-post_headers = copy.copy(headers)
-post_headers["Accept-Language"] = 'en-US,en;q=0.9'
-post_response = session.post(LOGIN_URL, data=data, headers=post_headers)
-
-now = datetime.datetime.now()
-end = now + datetime.timedelta(days=30)
-
-sendgrid_mailer = SendGridMailer()
-
-ALLOWED_LEVELS = ['G09', 'G10', 'G11', 'G12', 'G13', 'G14', 'B09', 'B10', 'B11', 'B12', 'B13', 'B14']
-MY_NAME = 'C. Utter'
-
-google_calendar = GoogleCalendar()
+def parse_args():
+    parser = argparse.ArgumentParser(description='Referee Scraper.')
+    parser.add_argument("-s", "--site", help="Defaults to ohiosouth.", default="ohiosouth")
+    return parser.parse_args()
 
 def create_event(summary, location, date_time, description):
-    event_end = date_time + datetime.timedelta(minutes=90)
-    return {
-        'summary': summary,
-        'location': location,
-        'description': description,
-        'start': {
-            'dateTime': date_time.isoformat() + '-04:00'
-        },
-        'end': {
-            'dateTime': event_end.isoformat() + '-04:00'
-        },
-        'reminders': {
-            'useDefault': True,
-        },
-    }
+        event_end = date_time + datetime.timedelta(minutes=90)
+        return {
+            'summary': summary,
+            'location': location,
+            'description': description,
+            'start': {
+                'dateTime': date_time.isoformat()
+            },
+            'end': {
+                'dateTime': event_end.isoformat()
+            },
+            'reminders': {
+                'useDefault': True,
+            },
+        }
 
-def parse_event_line(line):
-    age_level = line['Level'][0: 3]
-    is_my_game = False
-    summary = age_level
-    if age_level not in ALLOWED_LEVELS:
-        return False, None, None, None, None
-    position = None
-    description = ''
-    location = line['Field']
-    if MY_NAME == line['Ref']:
-        position = 'Ref'
-    elif MY_NAME == line['AR1']:
-        position = 'AR1'
-    elif MY_NAME == line['AR2']:
-        position = 'AR2'
-    
-    if position:
-        is_my_game = True
-        summary += " {}".format(position)
-        print('existing game for me')
+HEADERS = {'User-agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:91.0) Gecko/20100101 Firefox/91.0'}
 
-    date_time = datetime.datetime.strptime("{} {}".format(line['Date'], line['Time']), '%Y-%m-%d %I:%M %p')
-    description = "{} vs {}".format(line['hm_team'], line['aw_team'])
-    return is_my_game, summary, date_time, location, description
+def main():
+    args = parse_args()
+    site = args.site
 
-games = []
-if parsing_format == 'scraper':
-    scraper = GameScraper(league, post_headers, session)
+    sendgrid_mailer = SendGridMailer()
+    google_calendar = GoogleCalendar()
+
+    if site == 'ohiosouth':
+        scraper = OhioSouthScraper()
+
+    scraper.login()
+    scraper.navigate_parsing_page()
     games = scraper.get_all_games()
-else:
-    stream = CsvReader.get_stream(post_headers, session, sendgrid_mailer)
-    games = csv.DictReader(stream)
 
-# for line in reader:
-for line in games:
-    is_my_game, summary, date_time, location, description = parse_event_line(line)
-    if is_my_game:
-        event = create_event(summary, location, date_time, description)
-        print(event)
-        if not google_calendar.already_exists(event):
-            print('creating event')
-            google_calendar.create_event(event)
-            sendgrid_mailer.send_new_calendar_event(summary, date_time)
+    # for line in reader:
+    for line in games:
+        event = scraper.parse_event_line(line)
+        if event.is_my_game and not event.is_cancelled:
+            event = create_event(event.summary, event.location, event.date_time, event.description)
+            print(event)
+            if not google_calendar.already_exists(event):
+                print('creating event')
+                google_calendar.create_event(event)
+                sendgrid_mailer.send_new_calendar_event(event.summary, event.date_time)
+
+if __name__ == '__main__':
+    main()
