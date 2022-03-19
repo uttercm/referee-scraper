@@ -2,8 +2,9 @@ import datetime
 import json
 
 from bs4 import BeautifulSoup
+from pytz import timezone
 
-from app.scraper import Scraper
+from app.scrapers.scraper import GameEvent, Scraper
 
 
 class OhioSouthScraper(Scraper):
@@ -53,21 +54,31 @@ class OhioSouthScraper(Scraper):
         games = main_table[2].find("table").find_all("tr")
         for game in games[1:]:
             game_data = game.find_all("td")
-            level = game_data[1].text.strip()[3:]
-            level = level[-1] + level[-4:-2]
+            summary = game_data[1].text.strip()
+
             game_date = self.year + "-" + game_data[2].text.strip().replace("/", "-")
-            new_game = {
-                "game_num": game_data[0].text.strip(),
-                "Level": level,
-                "Date": game_date,
-                "Time": game_data[3].text.strip(),
-                "Field": game_data[4].text.strip(),
-                "hm_team": game_data[5].text.strip(),
-                "aw_team": game_data[6].text.strip(),
-                "Ref": game_data[7].text.strip(),
-                "AR1": game_data[8].text.strip(),
-                "AR2": game_data[9].text.strip(),
-            }
+            game_time = game_data[3].text.strip()
+            date_time = datetime.datetime.strptime(
+                "{} {}".format(game_date, game_time), "%Y-%m-%d %I:%M %p"
+            ).astimezone(timezone("US/Eastern"))
+
+            location = game_data[4].text.strip()
+
+            home_team = game_data[5].text.strip()
+            is_cancelled = home_team == "Canceled"
+            description = "{} vs {}".format(home_team, game_data[6].text.strip())
+            my_position = self.get_my_position(
+                self.__remove_links(game_data[7].text.strip()),
+                self.__remove_links(game_data[8].text.strip()),
+                self.__remove_links(game_data[9].text.strip()),
+            )
+            if my_position:
+                is_my_game = True
+                summary += " {}".format(my_position)
+                print("existing game for me")
+            new_game = GameEvent(
+                is_my_game, summary, date_time, location, description, is_cancelled
+            )
             game_list.append(new_game)
         return game_list
 

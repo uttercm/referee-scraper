@@ -2,8 +2,9 @@ import json
 from datetime import datetime
 
 from bs4 import BeautifulSoup
+from pytz import timezone
 
-from app.scraper import Scraper
+from app.scrapers.scraper import GameEvent, Scraper
 
 
 class MVYSAScraper(Scraper):
@@ -59,6 +60,7 @@ class MVYSAScraper(Scraper):
         )
         games = main_table.find_all("tr")
         for game in games[1:]:
+            is_my_game = False
             game_data = game.find_all("td")
 
             columns = {}
@@ -66,28 +68,31 @@ class MVYSAScraper(Scraper):
             for i, column in enumerate(game_data):
                 columns[i] = column.renderContents().decode("utf-8").split("<br/>")
 
-            special_date = BeautifulSoup(columns[1][0], "html.parser")
-            game_date = (
-                self.year
-                + "-"
-                + datetime.strptime(
-                    special_date.get_text(strip=True), "%a, %b %d"
-                ).strftime("%m-%d")
+            unparsed_date = (
+                self.year + " " + game_data[1].get_text(strip=True, separator=" ")
             )
-            new_game = {
-                "game_num": columns[0][0].strip(),
-                "Level": columns[0][1].strip(),
-                "Date": game_date,
-                "Time": BeautifulSoup(columns[1][1], "html.parser").get_text(
-                    strip=True
-                ),
-                "Field": game_data[2].get_text(strip=True, separator=" "),
-                "hm_team": columns[3][0].strip(),
-                "aw_team": columns[3][1].strip(),
-                "Ref": self.__remove_links(columns[5][0]),
-                "AR1": self.__remove_links(columns[5][1]),
-                "AR2": self.__remove_links(columns[5][2]),
-            }
+            date_time = datetime.strptime(
+                unparsed_date, "%Y %a, %b %d %I:%M %p"
+            ).astimezone(timezone("US/Eastern"))
+            summary = "MVYSA " + columns[0][1].strip()
+            my_position = self.get_my_position(
+                self.__remove_links(columns[5][0]),
+                self.__remove_links(columns[5][1]),
+                self.__remove_links(columns[5][2]),
+            )
+            if my_position:
+                is_my_game = True
+                summary += " {}".format(my_position)
+                print("existing game for me")
+
+            is_cancelled = False
+            location = game_data[2].get_text(strip=True, separator=" ")
+            description = "{} vs {}".format(
+                columns[3][0].strip(), columns[3][1].strip()
+            )
+            new_game = GameEvent(
+                is_my_game, summary, date_time, location, description, is_cancelled
+            )
             all_games.append(new_game)
         return all_games
 

@@ -2,8 +2,8 @@ import argparse
 import datetime
 
 from app.google_calendar import GoogleCalendar
-from app.mvysa_scraper import MVYSAScraper
-from app.ohio_south_scraper import OhioSouthScraper
+from app.scrapers.mvysa_scraper import MVYSAScraper
+from app.scrapers.ohio_south_scraper import OhioSouthScraper
 from app.sendgrid_mailer import SendGridMailer
 
 
@@ -51,8 +51,7 @@ def main():
     games = scraper.get_all_games()
 
     # for line in reader:
-    for line in games:
-        game_event = scraper.parse_event_line(line)
+    for game_event in games:
         if game_event.is_my_game and not game_event.is_cancelled:
             google_event = create_event(
                 game_event.summary,

@@ -3,7 +3,6 @@ import copy
 import datetime
 
 import requests
-from pytz import timezone
 
 GameEvent = collections.namedtuple(
     "Event",
@@ -54,32 +53,12 @@ class Scraper:
     def get_all_games(self):
         raise NotImplementedError
 
-    def parse_event_line(self, line):
-        age_level = line["Level"][0:3]
-        is_my_game = False
-        summary = age_level or ""
+    def get_my_position(self, ref, ar1, ar2):
         position = None
-        description = ""
-        location = line["Field"]
-        if self.my_name == line["Ref"]:
+        if self.my_name == ref:
             position = "Ref"
-        elif self.my_name == line["AR1"]:
+        elif self.my_name == ar1:
             position = "AR1"
-        elif self.my_name == line["AR2"]:
+        elif self.my_name == ar2:
             position = "AR2"
-
-        is_cancelled = line["hm_team"] == "Canceled"
-
-        if position:
-            is_my_game = True
-            summary += " {}".format(position)
-            print("existing game for me")
-
-        date_time = datetime.datetime.strptime(
-            "{} {}".format(line["Date"], line["Time"]), "%Y-%m-%d %I:%M %p"
-        )
-        date_time = date_time.astimezone(timezone("US/Eastern"))
-        description = "{} vs {}".format(line["hm_team"], line["aw_team"])
-        return GameEvent(
-            is_my_game, summary, date_time, location, description, is_cancelled
-        )
+        return position
