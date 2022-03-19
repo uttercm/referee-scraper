@@ -1,7 +1,9 @@
 import collections
 import copy
+import datetime
 
 import requests
+from pytz import timezone
 
 GameEvent = collections.namedtuple(
     "Event",
@@ -19,6 +21,7 @@ class Scraper:
         self.session = None
         self.post_headers = None
         self.my_name = None
+        self.year = datetime.datetime.now().strftime("%Y")
 
     def login(self):
         # For Setting Cookies
@@ -45,4 +48,31 @@ class Scraper:
         raise NotImplementedError
 
     def parse_event_line(self, line):
-        raise NotImplementedError
+        age_level = line["Level"][0:3]
+        is_my_game = False
+        summary = age_level
+        position = None
+        description = ""
+        location = line["Field"]
+        if self.my_name == line["Ref"]:
+            position = "Ref"
+        elif self.my_name == line["AR1"]:
+            position = "AR1"
+        elif self.my_name == line["AR2"]:
+            position = "AR2"
+
+        is_cancelled = line["hm_team"] == "Canceled"
+
+        if position:
+            is_my_game = True
+            summary += " {}".format(position)
+            print("existing game for me")
+
+        date_time = datetime.datetime.strptime(
+            "{} {}".format(line["Date"], line["Time"]), "%Y-%m-%d %I:%M %p"
+        )
+        date_time = date_time.astimezone(timezone("US/Eastern"))
+        description = "{} vs {}".format(line["hm_team"], line["aw_team"])
+        return GameEvent(
+            is_my_game, summary, date_time, location, description, is_cancelled
+        )

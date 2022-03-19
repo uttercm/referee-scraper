@@ -2,6 +2,7 @@ import argparse
 import datetime
 
 from app.google_calendar import GoogleCalendar
+from app.mvysa_scraper import MVYSAScraper
 from app.ohio_south_scraper import OhioSouthScraper
 from app.sendgrid_mailer import SendGridMailer
 
@@ -42,6 +43,8 @@ def main():
 
     if site == "ohiosouth":
         scraper = OhioSouthScraper()
+    elif site == "mvysa":
+        scraper = MVYSAScraper()
 
     scraper.login()
     scraper.navigate_parsing_page()
