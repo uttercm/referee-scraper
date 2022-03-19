@@ -1,4 +1,3 @@
-import json
 from datetime import datetime
 
 from bs4 import BeautifulSoup
@@ -16,18 +15,17 @@ class MVYSAScraper(Scraper):
         self.games_url = "https://www.mvysa.com/cgi-bin/referee.cgi"
         self.my_name = None
         self.ref_num = None
+        self.login_info = self.login_info["mvysa"]
 
     def get_login_data(self):
-        f = open("application_info.json", "r")
-        login_info = json.load(f)
 
-        username = login_info["mvysa"]["username"]
-        self.my_name = login_info["mvysa"]["my_name"]
+        username = self.login_info["username"]
+        self.my_name = self.login_info["my_name"]
         return {
             "fnc": "login",
             "mo": "",
             "user_id": username,
-            "pass": login_info["mvysa"]["password"],
+            "pass": self.login_info["password"],
             "cmd": "Log+In",
         }
 
@@ -39,7 +37,6 @@ class MVYSAScraper(Scraper):
             "cmd": "See+Games",
         }
 
-        self.game_data = game_data
         get_response = self.session.post(
             self.games_url, data=game_data, headers=self.post_headers
         )
@@ -68,12 +65,12 @@ class MVYSAScraper(Scraper):
             for i, column in enumerate(game_data):
                 columns[i] = column.renderContents().decode("utf-8").split("<br/>")
 
-            unparsed_date = (
-                self.year + " " + game_data[1].get_text(strip=True, separator=" ")
+            unparsed_date = game_data[1].get_text(strip=True, separator=" ")
+            date_time = (
+                datetime.strptime(unparsed_date, "%a, %b %d %I:%M %p")
+                .replace(year=self.year)
+                .astimezone(timezone("US/Eastern"))
             )
-            date_time = datetime.strptime(
-                unparsed_date, "%Y %a, %b %d %I:%M %p"
-            ).astimezone(timezone("US/Eastern"))
             summary = "MVYSA " + columns[0][1].strip()
             my_position = self.get_my_position(
                 self.__remove_links(columns[5][0]),

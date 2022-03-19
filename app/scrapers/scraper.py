@@ -1,6 +1,7 @@
 import collections
 import copy
 import datetime
+import json
 
 import requests
 
@@ -27,7 +28,9 @@ class Scraper:
         self.session = None
         self.post_headers = None
         self.my_name = None
-        self.year = datetime.datetime.now().strftime("%Y")
+        self.year = datetime.datetime.now().year
+        with open("application_info.json", "r") as f:
+            self.login_info = json.load(f)
 
     def login(self):
         # For Setting Cookies

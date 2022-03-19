@@ -1,5 +1,4 @@
 import datetime
-import json
 
 from bs4 import BeautifulSoup
 from pytz import timezone
@@ -15,16 +14,14 @@ class OhioSouthScraper(Scraper):
         self.games_url = "http://www.thegameschedule.com/ohiosouth/ref2.php"
         self.my_name = None
         self.ref_num = None
+        self.login_info = self.login_info["ohio_south"]
 
     def get_login_data(self):
-        f = open("application_info.json", "r")
-        login_info = json.load(f)
-
-        self.ref_num = login_info["ohio_south"]["ref_num"]
-        self.my_name = login_info["ohio_south"]["my_name"]
+        self.ref_num = self.login_info["ref_num"]
+        self.my_name = self.login_info["my_name"]
         return {
             "requiredref_num": self.ref_num,
-            "requiredpassword": login_info["ohio_south"]["password"],
+            "requiredpassword": self.login_info["password"],
             "Submit1": "Go",
         }
 
@@ -42,7 +39,6 @@ class OhioSouthScraper(Scraper):
             "quick_pick": "6",
         }
 
-        self.game_data = game_data
         get_response = self.session.post(
             self.games_url, data=game_data, headers=self.post_headers
         )
@@ -56,11 +52,15 @@ class OhioSouthScraper(Scraper):
             game_data = game.find_all("td")
             summary = game_data[1].text.strip()
 
-            game_date = self.year + "-" + game_data[2].text.strip().replace("/", "-")
+            game_date = game_data[2].text.strip()
             game_time = game_data[3].text.strip()
-            date_time = datetime.datetime.strptime(
-                "{} {}".format(game_date, game_time), "%Y-%m-%d %I:%M %p"
-            ).astimezone(timezone("US/Eastern"))
+            date_time = (
+                datetime.datetime.strptime(
+                    "{} {}".format(game_date, game_time), "%m/%d %I:%M %p"
+                )
+                .replace(year=self.year)
+                .astimezone(timezone("US/Eastern"))
+            )
 
             location = game_data[4].text.strip()
 
