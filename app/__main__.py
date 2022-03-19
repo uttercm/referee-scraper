@@ -52,16 +52,21 @@ def main():
 
     # for line in reader:
     for line in games:
-        event = scraper.parse_event_line(line)
-        if event.is_my_game and not event.is_cancelled:
-            event = create_event(
-                event.summary, event.location, event.date_time, event.description
+        game_event = scraper.parse_event_line(line)
+        if game_event.is_my_game and not game_event.is_cancelled:
+            google_event = create_event(
+                game_event.summary,
+                game_event.location,
+                game_event.date_time,
+                game_event.description,
             )
-            print(event)
-            if not google_calendar.already_exists(event):
+            print(google_event)
+            if not google_calendar.already_exists(google_event):
                 print("creating event")
-                google_calendar.create_event(event)
-                sendgrid_mailer.send_new_calendar_event(event.summary, event.date_time)
+                google_calendar.create_event(google_event)
+                sendgrid_mailer.send_new_calendar_event(
+                    game_event.summary, game_event.date_time
+                )
 
 
 if __name__ == "__main__":

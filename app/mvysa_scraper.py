@@ -58,37 +58,42 @@ class MVYSAScraper(Scraper):
             .find_all("table")[1]
         )
         games = main_table.find_all("tr")
-        for game in games[1:2]:
+        for game in games[1:]:
             game_data = game.find_all("td")
 
-            game_num, level = (
-                game_data[0].get_text(strip=True, separator="\n").splitlines()
-            )
-            game_date, game_time = (
-                game_data[1].get_text(strip=True, separator="\n").splitlines()
-            )
-            field = game_data[2].get_text(strip=True, separator="\n").replace("\n", " ")
-            home, away = game_data[3].get_text(strip=True, separator="\n").splitlines()
-            ref, ar1, ar2 = (
-                game_data[5].get_text(strip=True, separator="\n").splitlines()
-            )
+            columns = {}
+
+            for i, column in enumerate(game_data):
+                columns[i] = column.renderContents().decode("utf-8").split("<br/>")
+
+            special_date = BeautifulSoup(columns[1][0], "html.parser")
             game_date = (
                 self.year
                 + "-"
-                + datetime.strptime(game_date, "%a, %b %d").strftime("%m-%d")
+                + datetime.strptime(
+                    special_date.get_text(strip=True), "%a, %b %d"
+                ).strftime("%m-%d")
             )
             new_game = {
-                "game_num": game_num,
-                "Level": level,
+                "game_num": columns[0][0].strip(),
+                "Level": columns[0][1].strip(),
                 "Date": game_date,
-                "Time": game_time,
-                "Field": field,
-                "hm_team": home,
-                "aw_team": away,
-                "Ref": ref,
-                "AR1": ar1,
-                "AR2": ar2,
+                "Time": BeautifulSoup(columns[1][1], "html.parser").get_text(
+                    strip=True
+                ),
+                "Field": game_data[2].get_text(strip=True, separator=" "),
+                "hm_team": columns[3][0].strip(),
+                "aw_team": columns[3][1].strip(),
+                "Ref": self.__remove_links(columns[5][0]),
+                "AR1": self.__remove_links(columns[5][1]),
+                "AR2": self.__remove_links(columns[5][2]),
             }
-            print(new_game)
-            # all_games.append(new_game)
+            all_games.append(new_game)
         return all_games
+
+    def __remove_links(self, position):
+        if "Open" in position:
+            return "Open"
+        if self.my_name in position:
+            return self.my_name
+        return position.strip()

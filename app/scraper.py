@@ -7,7 +7,14 @@ from pytz import timezone
 
 GameEvent = collections.namedtuple(
     "Event",
-    ["is_my_game", "summary", "date_time", "location", "description", "is_cancelled"],
+    [
+        "is_my_game",
+        "summary",
+        "date_time",
+        "location",
+        "description",
+        "is_cancelled",
+    ],
 )
 
 
@@ -50,7 +57,7 @@ class Scraper:
     def parse_event_line(self, line):
         age_level = line["Level"][0:3]
         is_my_game = False
-        summary = age_level
+        summary = age_level or ""
         position = None
         description = ""
         location = line["Field"]
