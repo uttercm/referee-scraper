@@ -6,7 +6,7 @@ import json
 import requests
 
 GameEvent = collections.namedtuple(
-    "Event",
+    "GameEvent",
     [
         "is_my_game",
         "summary",
