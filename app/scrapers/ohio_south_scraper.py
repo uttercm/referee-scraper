@@ -51,6 +51,7 @@ class OhioSouthScraper(Scraper):
         for game in games[1:]:
             game_data = game.find_all("td")
             summary = game_data[1].text.strip()
+            is_my_game = False
 
             game_date = game_data[2].text.strip()
             game_time = game_data[3].text.strip()
@@ -68,9 +69,9 @@ class OhioSouthScraper(Scraper):
             is_cancelled = home_team == "Canceled"
             description = "{} vs {}".format(home_team, game_data[6].text.strip())
             my_position = self.get_my_position(
-                self.__remove_links(game_data[7].text.strip()),
-                self.__remove_links(game_data[8].text.strip()),
-                self.__remove_links(game_data[9].text.strip()),
+                game_data[7].text.strip(),
+                game_data[8].text.strip(),
+                game_data[9].text.strip(),
             )
             if my_position:
                 is_my_game = True
