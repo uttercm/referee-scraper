@@ -50,7 +50,6 @@ def main():
     scraper.navigate_parsing_page()
     games = scraper.get_all_games()
 
-    # for line in reader:
     for game_event in games:
         if game_event.is_my_game and not game_event.is_cancelled:
             google_event = create_event(

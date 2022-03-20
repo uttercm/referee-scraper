@@ -11,7 +11,6 @@ class MVYSAScraper(Scraper):
         super().__init__()
         self.url = "https://www.mvysa.com/cgi-bin/login.cgi"
         self.login_url = "https://www.mvysa.com/cgi-bin/menu.cgi"
-        self.naviation_url = ""
         self.games_url = "https://www.mvysa.com/cgi-bin/referee.cgi"
         self.my_name = None
         self.ref_num = None
