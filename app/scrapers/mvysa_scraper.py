@@ -80,7 +80,13 @@ class MVYSAScraper(Scraper):
             home_team = columns[3][0].strip()
             away_team = columns[3][1].strip()
             new_game = GameEvent(
-                self.name, level, date_time, location, home_team, away_team, ref_crew
+                self.name,
+                level,
+                date_time,
+                location,
+                home_team,
+                away_team,
+                ref_crew,
             )
             all_games.append(new_game)
         return all_games

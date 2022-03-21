@@ -61,7 +61,7 @@ def main():
     games = scraper.get_all_games()
 
     for game_event in games:
-        if game_event.is_my_game and not game_event.is_cancelled:
+        if game_event.is_my_game() and not game_event.is_cancelled:
             google_event = create_event(
                 game_event.summary,
                 game_event.location,

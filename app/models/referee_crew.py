@@ -4,6 +4,7 @@ class RefereeCrew:
         self.ar1 = ar1
         self.ar2 = ar2
         self.my_name = my_name
+        self.my_position = self.get_my_position()
 
     def get_my_position(self):
         position = None

@@ -20,7 +20,9 @@ class GameEvent:
         self.ref_crew = ref_crew
         self.is_cancelled = is_cancelled
         self.description = "{} vs {}".format(home_team, away_team)
-        self.summary = "{} {}".format(league, level)
+        self.summary = "{} {} ".format(league.replace("_", " ").title(), level)
+        if self.is_my_game():
+            self.summary += ref_crew.my_position
 
     def is_my_game(self):
-        return self.ref_crew.get_my_position() is not None
+        return self.ref_crew.my_position is not None

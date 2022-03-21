@@ -2,8 +2,9 @@ import datetime
 
 from bs4 import BeautifulSoup
 
+from app.models.game_event import GameEvent
 from app.models.referee_crew import RefereeCrew
-from app.scrapers.scraper import GameEvent, Scraper
+from app.scrapers.scraper import Scraper
 
 
 class OhioSouthScraper(Scraper):
