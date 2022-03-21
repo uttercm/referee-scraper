@@ -1,20 +1,23 @@
 from datetime import datetime
 
 from bs4 import BeautifulSoup
-from pytz import timezone
 
-from app.scrapers.scraper import GameEvent, Scraper
+from app.models.game_event import GameEvent
+from app.models.referee_crew import RefereeCrew
+from app.scrapers.scraper import Scraper
 
 
 class MVYSAScraper(Scraper):
+    name = "mvysa"
+
     def __init__(self):
         super().__init__()
-        self.url = "https://www.mvysa.com/cgi-bin/login.cgi"
-        self.login_url = "https://www.mvysa.com/cgi-bin/menu.cgi"
-        self.games_url = "https://www.mvysa.com/cgi-bin/referee.cgi"
+        base_url = "https://www.mvysa.com/cgi-bin/"
+        self.login_url = base_url + "/login.cgi"
+        self.home_url = base_url + "/menu.cgi"
+        self.games_url = base_url + "/referee.cgi"
         self.my_name = None
         self.ref_num = None
-        self.login_info = self.login_info["mvysa"]
 
     def get_login_data(self):
 
@@ -56,7 +59,6 @@ class MVYSAScraper(Scraper):
         )
         games = main_table.find_all("tr")
         for game in games[1:]:
-            is_my_game = False
             game_data = game.find_all("td")
 
             columns = {}
@@ -65,36 +67,27 @@ class MVYSAScraper(Scraper):
                 columns[i] = column.renderContents().decode("utf-8").split("<br/>")
 
             unparsed_date = game_data[1].get_text(strip=True, separator=" ")
-            date_time = (
-                datetime.strptime(unparsed_date, "%a, %b %d %I:%M %p")
-                .replace(year=self.year)
-                .astimezone(timezone("US/Eastern"))
+            date_time = datetime.strptime(unparsed_date, "%a, %b %d %I:%M %p").replace(
+                year=self.year
             )
-            summary = "MVYSA " + columns[0][1].strip()
-            my_position = self.get_my_position(
-                self.__remove_links(columns[5][0]),
-                self.__remove_links(columns[5][1]),
-                self.__remove_links(columns[5][2]),
-            )
-            if my_position:
-                is_my_game = True
-                summary += " {}".format(my_position)
-                print("existing game for me")
+            level = columns[0][1].strip()
+            ref = self.__remove_links(columns[5][0])
+            ar1 = self.__remove_links(columns[5][1])
+            ar2 = self.__remove_links(columns[5][2])
+            ref_crew = RefereeCrew(self.my_name, ref, ar1, ar2)
 
-            is_cancelled = False
             location = game_data[2].get_text(strip=True, separator=" ")
-            description = "{} vs {}".format(
-                columns[3][0].strip(), columns[3][1].strip()
-            )
+            home_team = columns[3][0].strip()
+            away_team = columns[3][1].strip()
             new_game = GameEvent(
-                is_my_game, summary, date_time, location, description, is_cancelled
+                self.name, level, date_time, location, home_team, away_team, ref_crew
             )
             all_games.append(new_game)
         return all_games
 
     def __remove_links(self, position):
         if "Open" in position:
-            return "Open"
+            return ""
         if self.my_name in position:
             return self.my_name
         return position.strip()

@@ -1,16 +1,17 @@
 import argparse
 import datetime
 
-from app.google_calendar import GoogleCalendar
+from app.models.google_calendar import GoogleCalendar
+from app.models.sendgrid_mailer import SendGridMailer
 from app.scrapers.mvysa_scraper import MVYSAScraper
 from app.scrapers.ohio_south_scraper import OhioSouthScraper
-from app.sendgrid_mailer import SendGridMailer
+from app.scrapers.scraper import Scraper
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Referee Scraper.")
     parser.add_argument(
-        "-s", "--site", help="Defaults to ohiosouth.", default="ohiosouth"
+        "-s", "--site", help="Defaults to ohio_south.", default="ohio_south"
     )
     return parser.parse_args()
 
@@ -41,7 +42,16 @@ def main():
     sendgrid_mailer = SendGridMailer()
     google_calendar = GoogleCalendar()
 
-    if site == "ohiosouth":
+    scraper_classes = Scraper.__subclasses__()
+
+    for scraper_cls in scraper_classes:
+        if site == scraper_cls.name:
+            scraper = scraper_cls()
+            break
+    else:
+        print(f"Did not find a scraper called {site}")
+
+    if site == "ohio_south":
         scraper = OhioSouthScraper()
     elif site == "mvysa":
         scraper = MVYSAScraper()

@@ -1,20 +1,22 @@
 import datetime
 
 from bs4 import BeautifulSoup
-from pytz import timezone
 
+from app.models.referee_crew import RefereeCrew
 from app.scrapers.scraper import GameEvent, Scraper
 
 
 class OhioSouthScraper(Scraper):
+    name = "ohio_south"
+
     def __init__(self):
         super().__init__()
-        self.url = "http://www.thegameschedule.com/ohiosouth/index.php"
-        self.login_url = "http://www.thegameschedule.com/ohiosouth/ref1.php"
-        self.games_url = "http://www.thegameschedule.com/ohiosouth/ref2.php"
+        base_url = "http://www.thegameschedule.com/ohiosouth"
+        self.login_url = base_url + "/index.php"
+        self.home_url = base_url + "/ref1.php"
+        self.games_url = base_url + "/ref2.php"
         self.my_name = None
         self.ref_num = None
-        self.login_info = self.login_info["ohio_south"]
 
     def get_login_data(self):
         self.ref_num = self.login_info["ref_num"]
@@ -50,35 +52,32 @@ class OhioSouthScraper(Scraper):
         games = main_table[2].find("table").find_all("tr")
         for game in games[1:]:
             game_data = game.find_all("td")
-            summary = game_data[1].text.strip()
-            is_my_game = False
-
+            level = game_data[1].text.strip()
             game_date = game_data[2].text.strip()
             game_time = game_data[3].text.strip()
-            date_time = (
-                datetime.datetime.strptime(
-                    "{} {}".format(game_date, game_time), "%m/%d %I:%M %p"
-                )
-                .replace(year=self.year)
-                .astimezone(timezone("US/Eastern"))
-            )
+            date_time = datetime.datetime.strptime(
+                "{} {}".format(game_date, game_time), "%m/%d %I:%M %p"
+            ).replace(year=self.year)
 
             location = game_data[4].text.strip()
 
             home_team = game_data[5].text.strip()
-            is_cancelled = home_team == "Canceled"
-            description = "{} vs {}".format(home_team, game_data[6].text.strip())
-            my_position = self.get_my_position(
+            away_team = game_data[6].text.strip()
+            ref_crew = RefereeCrew(
+                self.my_name,
                 game_data[7].text.strip(),
                 game_data[8].text.strip(),
                 game_data[9].text.strip(),
             )
-            if my_position:
-                is_my_game = True
-                summary += " {}".format(my_position)
-                print("existing game for me")
             new_game = GameEvent(
-                is_my_game, summary, date_time, location, description, is_cancelled
+                self.name,
+                level,
+                date_time,
+                location,
+                home_team,
+                away_team,
+                ref_crew,
+                is_cancelled=home_team == "Canceled",
             )
             game_list.append(new_game)
         return game_list
