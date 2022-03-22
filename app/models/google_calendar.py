@@ -7,6 +7,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
 
+# Tailored of off Google API's quickstart guide: https://developers.google.com/calendar/api/quickstart/python
 class GoogleCalendar:
 
     # If modifying these scopes, delete the file token.json.

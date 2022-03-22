@@ -1,15 +1,15 @@
 import argparse
 import datetime
 
-from app.google_calendar import GoogleCalendar
-from app.ohio_south_scraper import OhioSouthScraper
-from app.sendgrid_mailer import SendGridMailer
+from app.models.google_calendar import GoogleCalendar
+from app.models.sendgrid_mailer import SendGridMailer
+from app.scrapers.scraper import Scraper
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Referee Scraper.")
     parser.add_argument(
-        "-s", "--site", help="Defaults to ohiosouth.", default="ohiosouth"
+        "-s", "--site", help="Defaults to ohio_south.", default="ohio_south"
     )
     return parser.parse_args()
 
@@ -40,25 +40,34 @@ def main():
     sendgrid_mailer = SendGridMailer()
     google_calendar = GoogleCalendar()
 
-    if site == "ohiosouth":
-        scraper = OhioSouthScraper()
+    scraper_classes = Scraper.__subclasses__()
+
+    for scraper_cls in scraper_classes:
+        if site == scraper_cls.name:
+            scraper = scraper_cls()
+            break
+    else:
+        print(f"Did not find a scraper called {site}")
 
     scraper.login()
     scraper.navigate_parsing_page()
     games = scraper.get_all_games()
 
-    # for line in reader:
-    for line in games:
-        event = scraper.parse_event_line(line)
-        if event.is_my_game and not event.is_cancelled:
-            event = create_event(
-                event.summary, event.location, event.date_time, event.description
+    for game_event in games:
+        if game_event.is_my_game() and not game_event.is_cancelled:
+            google_event = create_event(
+                game_event.summary,
+                game_event.location,
+                game_event.date_time,
+                game_event.description,
             )
-            print(event)
-            if not google_calendar.already_exists(event):
+            print(google_event)
+            if not google_calendar.already_exists(google_event):
                 print("creating event")
-                google_calendar.create_event(event)
-                sendgrid_mailer.send_new_calendar_event(event.summary, event.date_time)
+                google_calendar.create_event(google_event)
+                sendgrid_mailer.send_new_calendar_event(
+                    game_event.summary, game_event.date_time
+                )
 
 
 if __name__ == "__main__":

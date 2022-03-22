@@ -20,7 +20,7 @@ For my own scraper of Ohio's referee assignments and adding them to Google Calen
 Arguments:
 
 _SITE_
-For scraping one of the different websites right now only `ohiosouth` is supported.
+For scraping one of the different websites. Defaults to `ohio_south`. Available options are `ohio_south` and `mvysa`.
 
 ## Functionality
 
