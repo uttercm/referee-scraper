@@ -3,8 +3,6 @@ import datetime
 
 from app.models.google_calendar import GoogleCalendar
 from app.models.sendgrid_mailer import SendGridMailer
-from app.scrapers.mvysa_scraper import MVYSAScraper
-from app.scrapers.ohio_south_scraper import OhioSouthScraper
 from app.scrapers.scraper import Scraper
 
 
@@ -50,11 +48,6 @@ def main():
             break
     else:
         print(f"Did not find a scraper called {site}")
-
-    if site == "ohio_south":
-        scraper = OhioSouthScraper()
-    elif site == "mvysa":
-        scraper = MVYSAScraper()
 
     scraper.login()
     scraper.navigate_parsing_page()
