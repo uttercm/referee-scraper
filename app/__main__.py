@@ -3,7 +3,7 @@ import datetime
 
 from app.models.google_calendar import GoogleCalendar
 from app.models.sendgrid_mailer import SendGridMailer
-from app.scrapers.scraper import Scraper
+from app.scrapers import Scraper
 
 
 def parse_args():
